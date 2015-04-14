@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Chat</title>
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div id="channels">
+        <ul id="channel-list"></ul>
+        <input id="channel-name" type="text" placeholder="New channel name" /><button onclick="createChannel()">Create</button>
+    </div>
+    <div id="channel" style="display: none;">
+        <h2>Chats</h2>
+        <ul id="chatbox"></ul>
+        <input id="author" type="text" placeholder="Name" /><br>
+        <input id="chat" type="text" placeholder="Message" /><button id="send" onclick="sendChat()">Send</button>
+    </div>
+
+    <script  type="text/javascript">
+        var socket = io('http://10.0.0.24:9001');
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/channels', false);
+        xhr.send();
+        var channels = JSON.parse(xhr.responseText);
+        channels.forEach(function (channel) {
+            document.getElementById('channels').innerHTML += '<li><a href="#' + channel + '" onclick="joinChannel(\'' + channel + '\')">' + channel + '</a></li>';
+        });
+
+        function showMessage(msg) {
+            document.getElementById('chatbox').innerHTML += '<li><strong>' + msg.author + ':</strong> ' + msg.text + '</li>';
+        }
+
+        function sendChat() {
+            var author = document.getElementById('author').value;
+            var text = document.getElementById('chat').value;
+
+            if (text !== "") {
+                var msg = { author: author, text: text };
+                socket.emit('chat', msg);
+                showMessage(msg);
+                document.getElementById('chat').value = "";
+            }
+        }
+
+        function joinChannel(channelName) {
+            // Join channel
+            socket.emit('join', channelName);
+
+            // Get channel messages
+            var request = new XMLHttpRequest();
+            request.open('GET', '/' + channelName + '/messages', false);
+            request.send();
+            var messages = JSON.parse(request.responseText);
+            messages.forEach(function (msg) {
+                showMessage(msg);
+            });
+
+            // Update DOM
+            document.getElementById('channels').style.display = 'none';
+            document.getElementById('channel').style.display = 'block';
+        }
+
+        function createChannel() {
+            var name = document.getElementById('channel-name').value;
+
+            // Get channel messages
+            var request = new XMLHttpRequest();
+            request.open('POST', '/channels', false);
+            request.setRequestHeader('Content-Type', 'application/json');
+            request.send(JSON.stringify({name: name}));
+
+            document.getElementById('channels').innerHTML += '<li><a href="#' + name + '" onclick="joinChannel(\'' + name + '\')">' + name + '</a></li>';
+        }
+
+        socket.on('message', function (msg) {
+            showMessage(msg);
+        });
+    </script>
+</body>
+</html>

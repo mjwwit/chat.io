@@ -1,0 +1,9 @@
+{
+  "name": "chat.io",
+  "version": "0.0.1",
+  "authors": [
+    "Michael de Wit <mjwwit@gmail.com>"
+  ],
+  "license": "MIT",
+  "private": true
+}
